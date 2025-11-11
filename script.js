@@ -656,7 +656,7 @@ function setPetState(newState) {
     return false;
   }
 
-  if (newState === "sleep" && energy >= 100) {
+  if (newState === "sleep" && energy >= 15) {
     showAlert("💤 Your pet isn't tired yet!");
     return false;
   }

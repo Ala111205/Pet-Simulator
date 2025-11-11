@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://kit.fontawesome.com/9885839914.js" crossorigin="anonymous"></script>
+  <title>3D Virtual Pet</title>
+  <link rel="stylesheet" type="text/css" href="./styles.css" />
+</head>
+<body>
+    <div class="game-container">
+      <div id="pageLoader">
+        <div class="bar-loader"><span></span><span></span><span></span></div>
+      </div>
+
+      <!-- Pet Selection Screen -->
+      <div id="petSelection">
+        <h1>Select Your Pet</h1>
+        <div class="pet-design">
+          <button id="prevPet" class="nav-btn">◀</button>
+
+          <div class="pet-option" id="petContainer">
+            <label id="petName">Mosasaur</label>
+            <canvas id="petPreview"></canvas>
+          </div>
+
+          <button id="nextPet" class="nav-btn">▶</button>
+        </div>
+
+        <button id="selectPetBtn" class="select-btn">Select Pet</button>
+      </div>
+
+      <div id="loadingScreen" style="display:none;">
+        <div class="loader"></div>
+        <p>Loading your pet...</p>
+      </div>
+
+      <div id="gameAlert" class="alert"></div>
+
+      <!-- Game UI -->
+      <div id="gameUI" style="display:none;">
+        <div id="energyContainer">
+          <label>Energy</label>
+          <div class="bar">
+            <div id="energyFill"></div>
+          </div>
+        </div>
+        <canvas id="petCanvas"></canvas>
+        <div id="controls">
+          <div>
+            <h3>Anger: <span id="anger">100</span></h3>
+            <div class="action-btn">
+              <button id="punchBtn"><i class="fa-solid fa-hand-fist"></i></button>
+              <span class="warning-icon" id="punchWarn">!</span>
+            </div>
+          </div>
+          <div>
+            <h3>Happiness: <span id="happiness">100</span></h3>
+            <div class="action-btn">
+              <button id="playBtn"><i class="fa-solid fa-volleyball"></i></button>
+              <span class="warning-icon" id="playWarn">!</span>
+            </div>
+          </div>
+          <div id="sleepContainer">
+            <div class="action-btn sleep-container">
+              <button id="sleepBtn"><i class="fa-solid fa-moon"></i></button>
+              <span class="warning-icon" id="sleepWarn">!</span>
+            </div>
+            <h3 id="energycontent">Energy: <span id="energy">100</span></h3>
+            <div class="action-btn wakeup-container">
+              <button id="wakeupBtn"><i class="fa-solid fa-sun"></i></button>
+              <span class="success-icon" id="sleepFull">✔</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  <script type="module" src="./script.js"></script>
+</body>
+</html>

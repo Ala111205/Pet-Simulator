@@ -11,7 +11,7 @@ The project provides a fun and dynamic pet interaction system with automatic ani
 
 🧩 Multiple 3D Pets – Choose from different GLB models like Mosasaur and Mikie.
 
-🦴 Interactive States – Pet can eat, sleep, play, or stay idle depending on player input.
+🦴 Interactive States – Pet can sleep, wakeup, play, punch or stay idle depending on player input.
 
 ⚡ Energy, Hunger, and Boredom Bars – Dynamic, real-time UI reflecting pet’s current state.
 

@@ -8,14 +8,30 @@ window.addEventListener("load", () => {
 
   petSelection.style.display = "none";
 
-  setTimeout(() => {
-    pageLoader.classList.add("fade-out");
+  const loader = new GLTFLoader();
+  const petModels = ["/assets/pets/Mosasaur.glb", "/assets/pets/Mikie.glb"];
+  let loadedCount = 0;
 
-    setTimeout(() => {
-      pageLoader.style.display = "none";
-      petSelection.style.display = "flex"; 
-    }, 500);
-  }, 2000);
+  petModels.forEach((path) => {
+    loader.load(
+      path,
+      (gltf) => {
+        loadedCount++;
+        if (loadedCount === petModels.length) {
+          // Both models are ready, hide loader
+          pageLoader.classList.add("fade-out");
+          setTimeout(() => {
+            pageLoader.style.display = "none";
+            petSelection.style.display = "flex";
+            loadPetPreview(currentPetIndex);
+            updateButtonState();
+          }, 500);
+        }
+      },
+      undefined,
+      (error) => console.error(`❌ Error loading ${path}:`, error)
+    );
+  });
 });
 
 // === PET PREVIEW LOGIC (Selection Screen) ===
@@ -157,27 +173,6 @@ function updateButtonState() {
   }
 }
 
-// window.addEventListener("DOMContentLoaded", () => {
-//   const prevPet = document.getElementById("prevPet");
-//   const nextPet = document.getElementById("nextPet")
-
-//   prevPet.addEventListener("click", () => {
-//     if (currentPetIndex > 0) {
-//       currentPetIndex--;
-//       loadPetPreview(currentPetIndex);
-//     }
-//     updateButtonState();
-//   });
-
-//   nextPet.addEventListener("click", () => {
-//     if (currentPetIndex < petList.length - 1) {
-//       currentPetIndex++;
-//       loadPetPreview(currentPetIndex);
-//     }
-//     updateButtonState();
-//   });
-// });
-
 document.getElementById("selectPetBtn").addEventListener("click", () => {
   const selectedPet = petList[currentPetIndex];
   console.log("Selected Pet:", selectedPet.name);
@@ -188,11 +183,6 @@ document.getElementById("selectPetBtn").addEventListener("click", () => {
   // Pass selection into game logic
   loadPet(selectedPet.id);
 });
-
-// window.addEventListener("DOMContentLoaded", () => {
-//   loadPetPreview(currentPetIndex);
-//   updateButtonState();
-// });
 
 // === Game Logic ===
 const canvas = document.getElementById("petCanvas");
@@ -402,9 +392,9 @@ function showAlert(message, duration = 2500, color = "red") {
 
 function updateWarnings() {
   const angerLow = anger <= 20;
-  const energyLow = energy <= 10;
+  const energyLow = energy <= 1;
   const energyFull = energy >= 99;
-  const funLow = happiness <= 20;
+  const funLow = happiness <= 10;
 
   document.getElementById("punchWarn").style.display = angerLow ? "block" : "none";
   document.getElementById("sleepWarn").style.display = energyLow ? "block" : "none";
@@ -502,7 +492,7 @@ const energyFill = document.getElementById("energyFill");
 function startEnergyDrain() {
   clearInterval(energyInterval);
 
-  const baseDrainRate = 100 / 1200; // ~20 min to drain fully
+  const baseDrainRate = 100 / 40; // ~20 min to drain fully
 
   energyInterval = setInterval(() => {
     if (["sleeping", "sleeping_transition", "wakeup"].includes(petState) || isBusy) return;
@@ -856,13 +846,14 @@ function stopCurrentAction() {
 // === anger DRAIN ===
 function startAngerDrain() {
   clearInterval(angerInterval);
-  const drainRate = 100 / 960;
+  const drainRate = 100 / 30;
 
   angerInterval = setInterval(() => {
     if (petState === "sleeping") return;
 
     anger = Math.max(anger - drainRate, 0);
     updateStatsDisplay();
+    updateWarnings();
 
     if (anger <= 20 && !angerAlertShown && !["sleeping", "wakeup", "sleeping_transition"].includes(petState)) {
       angerAlertShown = true;
@@ -883,6 +874,7 @@ function recoverAnger() {
   anger = Math.min(anger + gain, 100);
   updateStatsDisplay();
   updateWarnings();
+  checkAlertResets();
   console.log(`[anger] Recovered ${gain} → ${anger}%`);
 
   if (!angerInterval) startAngerDrain();
@@ -891,13 +883,14 @@ function recoverAnger() {
 // === HAPPINESS DRAIN ===
 function startHappinessDrain() {
   clearInterval(happinessInterval);
-  const drainRate = 100/ 1020;
+  const drainRate = 100/ 20;
 
   happinessInterval = setInterval(() => {
     if (petState === "sleeping") return;
 
     happiness = Math.max(happiness - drainRate, 0);
     updateStatsDisplay();
+    updateWarnings();
 
     if (happiness <= 10 && !happinessAlertShown && !["sleeping", "wakeup", "sleeping_transition"].includes(petState)) {
       happinessAlertShown = true;
@@ -918,6 +911,7 @@ function recoverHappiness() {
   happiness = Math.min(happiness + gain, 100);
   updateStatsDisplay();
   updateWarnings();
+  checkAlertResets();
   console.log(`[play] Happiness increased ${gain} → ${happiness}%`);
 
   if (!happinessInterval) startHappinessDrain();
@@ -930,6 +924,8 @@ function updateStatsDisplay() {
   angerSpan.textContent = Math.round(anger);
   happinessSpan.textContent = Math.round(happiness);
   energySpan.textContent = Math.round(energy);
+
+  checkAlertResets();
 }
 
 window.addEventListener("DOMContentLoaded", () => {
@@ -995,11 +991,11 @@ function checkAlertResets() {
     energyAlertShown = false;
   }
 
-  if (anger > 40 && angerAlertShown) {
+  if (anger > 20 && angerAlertShown) {
     angerAlertShown = false;
   }
 
-  if (happiness > 40 && happinessAlertShown) {
+  if (happiness > 10 && happinessAlertShown) {
     happinessAlertShown = false;
   }
 }

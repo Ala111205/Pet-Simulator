@@ -492,7 +492,7 @@ const energyFill = document.getElementById("energyFill");
 function startEnergyDrain() {
   clearInterval(energyInterval);
 
-  const baseDrainRate = 100 / 40; // ~20 min to drain fully
+  const baseDrainRate = 100 / 1200; // ~20 min to drain fully
 
   energyInterval = setInterval(() => {
     if (["sleeping", "sleeping_transition", "wakeup"].includes(petState) || isBusy) return;
@@ -846,7 +846,7 @@ function stopCurrentAction() {
 // === anger DRAIN ===
 function startAngerDrain() {
   clearInterval(angerInterval);
-  const drainRate = 100 / 30;
+  const drainRate = 100 / 960;
 
   angerInterval = setInterval(() => {
     if (petState === "sleeping") return;
@@ -883,7 +883,7 @@ function recoverAnger() {
 // === HAPPINESS DRAIN ===
 function startHappinessDrain() {
   clearInterval(happinessInterval);
-  const drainRate = 100/ 20;
+  const drainRate = 100/ 1020;
 
   happinessInterval = setInterval(() => {
     if (petState === "sleeping") return;

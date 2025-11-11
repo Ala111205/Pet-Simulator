@@ -233,6 +233,13 @@
     opacity: 1;
 }
 
+@media only screen and (max-width: 645px) {
+    .alert {
+        width: 95%;
+        max-width: 320px;
+    }
+}
+
 #gameUI { 
     position: fixed;
     top: -40px;

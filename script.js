@@ -20,8 +20,8 @@ window.addEventListener("load", () => {
 
 // === PET PREVIEW LOGIC (Selection Screen) ===
 const petList = [
-  { name: "Mosasaur", path: "src/assets/pets/Mosasaur.glb", id: 1 },
-  { name: "Mikie", path: "src/assets/pets/Mikie.glb", id: 2 },
+  { name: "Mosasaur", path: "public/assets/pets/Mosasaur.glb", id: 1 },
+  { name: "Mikie", path: "public/assets/pets/Mikie.glb", id: 2 },
 ];
 
 let currentPetIndex = 0;
@@ -303,7 +303,7 @@ function loadPet(id) {
   gameUI.style.display = "block";
   loadingScreen.style.display = "flex";
 
-  const petPath = `src/assets/pets/${id === 1 ? "Mosasaur.glb" : "Mikie.glb"}`;
+  const petPath = `public/assets/pets/${id === 1 ? "Mosasaur.glb" : "Mikie.glb"}`;
   loader.load(
     petPath,
     (gltf) => {
@@ -330,7 +330,7 @@ function loadPetAnimations(id) {
   let loaded = 0;
 
   actions.forEach((act) => {
-    const animPath = `src/assets/actions/${act}(${id}).glb`;
+    const animPath = `public/assets/actions/${act}(${id}).glb`;
     loader.load(
       animPath,
       (anim) => {

@@ -157,26 +157,26 @@ function updateButtonState() {
   }
 }
 
-window.addEventListener("DOMContentLoaded", () => {
-  const prevPet = document.getElementById("prevPet");
-  const nextPet = document.getElementById("nextPet")
+// window.addEventListener("DOMContentLoaded", () => {
+//   const prevPet = document.getElementById("prevPet");
+//   const nextPet = document.getElementById("nextPet")
 
-  prevPet.addEventListener("click", () => {
-    if (currentPetIndex > 0) {
-      currentPetIndex--;
-      loadPetPreview(currentPetIndex);
-    }
-    updateButtonState();
-  });
+//   prevPet.addEventListener("click", () => {
+//     if (currentPetIndex > 0) {
+//       currentPetIndex--;
+//       loadPetPreview(currentPetIndex);
+//     }
+//     updateButtonState();
+//   });
 
-  nextPet.addEventListener("click", () => {
-    if (currentPetIndex < petList.length - 1) {
-      currentPetIndex++;
-      loadPetPreview(currentPetIndex);
-    }
-    updateButtonState();
-  });
-});
+//   nextPet.addEventListener("click", () => {
+//     if (currentPetIndex < petList.length - 1) {
+//       currentPetIndex++;
+//       loadPetPreview(currentPetIndex);
+//     }
+//     updateButtonState();
+//   });
+// });
 
 document.getElementById("selectPetBtn").addEventListener("click", () => {
   const selectedPet = petList[currentPetIndex];
@@ -189,10 +189,10 @@ document.getElementById("selectPetBtn").addEventListener("click", () => {
   loadPet(selectedPet.id);
 });
 
-window.addEventListener("DOMContentLoaded", () => {
-  loadPetPreview(currentPetIndex);
-  updateButtonState();
-});
+// window.addEventListener("DOMContentLoaded", () => {
+//   loadPetPreview(currentPetIndex);
+//   updateButtonState();
+// });
 
 // === Game Logic ===
 const canvas = document.getElementById("petCanvas");
@@ -933,6 +933,28 @@ function updateStatsDisplay() {
 }
 
 window.addEventListener("DOMContentLoaded", () => {
+  const prevPet = document.getElementById("prevPet");
+  const nextPet = document.getElementById("nextPet")
+
+  prevPet.addEventListener("click", () => {
+    if (currentPetIndex > 0) {
+      currentPetIndex--;
+      loadPetPreview(currentPetIndex);
+    }
+    updateButtonState();
+  });
+
+  nextPet.addEventListener("click", () => {
+    if (currentPetIndex < petList.length - 1) {
+      currentPetIndex++;
+      loadPetPreview(currentPetIndex);
+    }
+    updateButtonState();
+  });
+
+  loadPetPreview(currentPetIndex);
+  updateButtonState();
+
   angerSpan = document.getElementById("anger");
   happinessSpan = document.getElementById("happiness");
   energySpan = document.getElementById("energy");

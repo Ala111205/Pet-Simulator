@@ -272,6 +272,7 @@ let happinessAlertShown = false;
 let angerSpan = null;
 let happinessSpan = null;
 let energySpan = null;
+let isRestoringState = false;
 
 const PERSIST_KEY = "pet_persist_v1";
 
@@ -503,6 +504,8 @@ function playState(state, onComplete) {
 const energyFill = document.getElementById("energyFill");
 
 function startEnergyDrain() {
+  if (isRestoringState) return;
+  
   clearInterval(energyInterval);
 
   const baseDrainRate = 100 / 100; // ~20 min to drain fully
@@ -582,6 +585,8 @@ function punch() {
 }
 
 function stopEnergyDrain() {
+  if (isRestoringState) return;
+
   if (energyInterval) {
     clearInterval(energyInterval);
     energyInterval = null;
@@ -632,6 +637,8 @@ function startSleepRecovery() {
 }
 
 function updateEnergyBar() {
+  if (isRestoringState) return;
+
   const value = Math.max(0, Math.min(energy, 100));
   energyFill.style.width = `${value}%`;
   energyFill.style.background =
@@ -847,6 +854,8 @@ function stopCurrentAction() {
 // === anger & Happiness Logic for Energy ===
 // === anger DRAIN ===
 function startAngerDrain() {
+  if (isRestoringState) return; 
+
   clearInterval(angerInterval);
   const drainRate = 100 / 960;
 
@@ -884,6 +893,8 @@ function recoverAnger() {
 
 // === HAPPINESS DRAIN ===
 function startHappinessDrain() {
+  if (isRestoringState) return;
+
   clearInterval(happinessInterval);
   const drainRate = 100/ 1020;
 
@@ -1011,10 +1022,13 @@ function checkAlertResets() {
 function onPetReady() {
   restorePetState();
 
+  // Do nothing while restore is in progress
+  if (isRestoringState) return;
+
   if (!angerInterval) startAngerDrain();
   if (!happinessInterval) startHappinessDrain();
 
-  // ⛔ DO NOT drain energy if sleeping
+  // DO NOT drain energy if sleeping
   if (!energyInterval && petState !== "sleeping") {
     startEnergyDrain();
   }
@@ -1051,44 +1065,47 @@ function restorePetState() {
   const raw = localStorage.getItem(PERSIST_KEY);
   if (!raw) return;
 
-  const saved = JSON.parse(raw);
-  if (!saved) return;
+  isRestoringState = true;
 
-  // Restore energy safely
-  if (typeof saved.energy === "number") {
-    energy = Math.max(0, Math.min(saved.energy, 100));
-    updateEnergyBar();
-    updateStatsDisplay();
+  const saved = JSON.parse(raw);
+  if (!saved) {
+    isRestoringState = false;
+    return;
   }
 
-  // ---- RESTORE SLEEP STATE ----
+  // Stop ALL timers first (critical)
+  stopEnergyDrain();
+  clearInterval(sleepInterval);
+  clearInterval(angerInterval);
+  clearInterval(happinessInterval);
+
+  // Restore energy
+  if (typeof saved.energy === "number") {
+    energy = Math.max(0, Math.min(saved.energy, 100));
+  }
+
+  updateEnergyBar();
+  updateStatsDisplay();
+
+  // ---- RESTORE SLEEP ----
   if (saved.petState === "sleeping" || saved.petState === "sleeping_transition") {
-    console.log("[restore] Pet was sleeping. Restoring sleep (manual mode).");
+    console.log("[restore] Sleeping state restored cleanly");
 
-    stopEnergyDrain();
-    clearInterval(sleepInterval);
-
-    // CRITICAL: do NOT mark busy
+    petState = "sleeping";
     isBusy = false;
 
-    // Put pet in sleeping state but WITHOUT recovery
-    petState = "sleeping";
-
-    // Play sleep animation ONLY
+    // Play sleep animation only (no recovery yet)
     const sleepAction = petStates["sleep"];
     if (sleepAction) {
       Object.values(petStates).forEach(a => a.stop());
       sleepAction.reset();
       sleepAction.setLoop(THREE.LoopRepeat);
-      sleepAction.clampWhenFinished = false;
       sleepAction.play();
       currentAction = sleepAction;
     }
 
     updateButtonVisibility();
-    updateEnergyBar();
-
-    // DO NOT call startSleepRecovery() here
+    isRestoringState = false;
     return;
   }
 
@@ -1097,6 +1114,8 @@ function restorePetState() {
   isBusy = false;
   playAction("idle");
   updateButtonVisibility();
+
+  isRestoringState = false;
 }
 
 // === RESIZE ===

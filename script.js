@@ -640,7 +640,7 @@ function updateEnergyBar() {
 
   const value = Math.max(0, Math.min(energy, 100));
   energyFill.style.width = `${value}%`;
-  energyFill.style.visibility = "visible";
+
   energyFill.style.background =
     petState === "sleeping"
       ? "skyblue"
@@ -1110,6 +1110,9 @@ function restorePetState() {
 
   // ✅ RESTORE COMPLETE — allow rendering
   isRestoringState = false;
+
+  // 🔓 Reveal bar ONLY now
+  energyFill.style.visibility = "visible";
 
   // ✅ FIRST and ONLY UI render
   updateEnergyBar();

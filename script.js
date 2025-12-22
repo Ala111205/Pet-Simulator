@@ -504,8 +504,6 @@ function playState(state, onComplete) {
 const energyFill = document.getElementById("energyFill");
 
 function startEnergyDrain() {
-  if (isRestoringState) return;
-  
   clearInterval(energyInterval);
 
   const baseDrainRate = 100 / 100; // ~20 min to drain fully
@@ -637,8 +635,6 @@ function startSleepRecovery() {
 }
 
 function updateEnergyBar() {
-  if (isRestoringState) return;
-
   const value = Math.max(0, Math.min(energy, 100));
   energyFill.style.width = `${value}%`;
   energyFill.style.background =

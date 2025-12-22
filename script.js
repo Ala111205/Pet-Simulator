@@ -273,6 +273,19 @@ let angerSpan = null;
 let happinessSpan = null;
 let energySpan = null;
 
+const PERSIST_KEY = "pet_persist_v1";
+
+function savePetState() {
+  const data = {
+    petState,
+    energy
+  };
+  localStorage.setItem(PERSIST_KEY, JSON.stringify(data));
+}
+
+window.addEventListener("beforeunload", () => {
+  savePetState();
+});
 
 function adjustPetScale(pet) {
   if (window.innerWidth <= 360) {
@@ -492,7 +505,7 @@ const energyFill = document.getElementById("energyFill");
 function startEnergyDrain() {
   clearInterval(energyInterval);
 
-  const baseDrainRate = 100 / 1200; // ~20 min to drain fully
+  const baseDrainRate = 100 / 100; // ~20 min to drain fully
 
   energyInterval = setInterval(() => {
     if (["sleeping", "sleeping_transition", "wakeup"].includes(petState) || isBusy) return;
@@ -516,8 +529,8 @@ function startEnergyDrain() {
 }
 
 // Energydrain for punch and play
-document.getElementById("playBtn").addEventListener("click", play);
-document.getElementById("punchBtn").addEventListener("click", punch);
+// document.getElementById("playBtn").addEventListener("click", play);
+// document.getElementById("punchBtn").addEventListener("click", punch);
 
 function performAction(action, energyCost, callback) {
   if (isBusy || petState === "sleeping" || energy <= 0) return;
@@ -766,6 +779,7 @@ if (newState === "sleep") {
 
 function updateButtonVisibility() {
   const sleepBtn = document.querySelector(".sleep-container");
+  if (!sleepBtn) return;
   const wakeupBtn = document.querySelector(".wakeup-container");
 
   if (petState === "sleeping") {
@@ -790,18 +804,6 @@ window.addEventListener("DOMContentLoaded", () => {
   document.getElementById("sleepBtn").addEventListener("click", () => setPetState("sleep"));
   document.getElementById("wakeupBtn").addEventListener("click", () => setPetState("wakeup"));
 });
-
-// function disableActionButtons(except = []) {
-//   document.querySelectorAll("#punchBtn, #playBtn").forEach(btn => {
-//     if (!except.includes(btn.id)) btn.disabled = true;
-//   });
-// }
-
-// function enableActionButtons() {
-//   document.querySelectorAll("#punchBtn, #playBtn").forEach(btn => {
-//     btn.disabled = false;
-//   });
-// }
 
 function stopCurrentAction() {
   if (!mixer || !currentAction) return;
@@ -965,19 +967,25 @@ window.addEventListener("DOMContentLoaded", () => {
   const punch = document.getElementById("punchBtn");
   const play = document.getElementById("playBtn");
 
-  punch.addEventListener("click", () => {
+  if (punchBtn) {
+  punchBtn.addEventListener("click", () => {
     if (petState === "sleeping") return showAlert("🐾 Pet is sleeping!");
+    play();
     const ok = setPetState("punch");
     if (!ok) return;
-    recoverAnger(); 
+    recoverAnger();
   });
+}
 
-  play.addEventListener("click", () => {
+if (playBtn) {
+  playBtn.addEventListener("click", () => {
     if (petState === "sleeping") return showAlert("🐾 Pet is sleeping!");
+    punch();
     const ok = setPetState("play");
-    if (!ok) return; 
+    if (!ok) return;
     recoverHappiness();
   });
+}
 
   document.getElementById("sleepBtn").addEventListener("click", () => setPetState("sleep"));
   document.getElementById("wakeupBtn").addEventListener("click", () => setPetState("wakeup"));
@@ -1001,16 +1009,21 @@ function checkAlertResets() {
 }
 
 function onPetReady() {
-  if (!angerInterval && !happinessInterval && !energyInterval) {
-    startAngerDrain();
-    startHappinessDrain();
+  restorePetState();
+
+  if (!angerInterval) startAngerDrain();
+  if (!happinessInterval) startHappinessDrain();
+
+  // ⛔ DO NOT drain energy if sleeping
+  if (!energyInterval && petState !== "sleeping") {
     startEnergyDrain();
   }
 
   console.log("[pet] Drain systems active:", {
     anger: !!angerInterval,
     happiness: !!happinessInterval,
-    energy: !!energyInterval
+    energy: !!energyInterval,
+    state: petState
   });
 }
 
@@ -1033,6 +1046,38 @@ function requestRender() {
   needsRender = true;
 }
 animate();
+
+function restorePetState() {
+  const raw = localStorage.getItem(PERSIST_KEY);
+  if (!raw) return;
+
+  const saved = JSON.parse(raw);
+  if (!saved) return;
+
+  if (typeof saved.energy === "number") {
+    energy = Math.max(0, Math.min(saved.energy, 100));
+    updateEnergyBar();
+    updateStatsDisplay();
+  }
+
+  // ONLY restore sleeping state (everything else defaults to idle)
+  if (saved.petState === "sleeping" || saved.petState === "sleeping_transition") {
+    console.log("[restore] Pet was sleeping. Restoring sleep mode.");
+
+    stopEnergyDrain();
+    clearInterval(sleepInterval);
+
+    petState = "sleeping";
+    isBusy = true;
+
+    playAction("sleep");  
+    startSleepRecovery();     // resumes energy recovery
+    updateButtonVisibility();
+  } else {
+    petState = "idle";
+    playAction("idle");
+  }
+}
 
 // === RESIZE ===
 window.addEventListener("resize", () => {

@@ -1054,33 +1054,49 @@ function restorePetState() {
   const saved = JSON.parse(raw);
   if (!saved) return;
 
-  // Restore energy
+  // Restore energy safely
   if (typeof saved.energy === "number") {
     energy = Math.max(0, Math.min(saved.energy, 100));
     updateEnergyBar();
     updateStatsDisplay();
   }
 
-  // Restore sleeping state if pet was sleeping
+  // ---- RESTORE SLEEP STATE ----
   if (saved.petState === "sleeping" || saved.petState === "sleeping_transition") {
-    console.log("[restore] Pet was sleeping. Restoring sleep mode.");
+    console.log("[restore] Pet was sleeping. Restoring sleep (manual mode).");
 
     stopEnergyDrain();
     clearInterval(sleepInterval);
 
-    petState = "sleeping_transition"; // use transition to allow wakeup
-    isBusy = false; // ensure wakeup button can be clicked
+    // CRITICAL: do NOT mark busy
+    isBusy = false;
 
-    playAction("sleep");       // start sleep animation
-    startSleepRecovery();      // resumes energy recovery
+    // Put pet in sleeping state but WITHOUT recovery
+    petState = "sleeping";
+
+    // Play sleep animation ONLY
+    const sleepAction = petStates["sleep"];
+    if (sleepAction) {
+      Object.values(petStates).forEach(a => a.stop());
+      sleepAction.reset();
+      sleepAction.setLoop(THREE.LoopRepeat);
+      sleepAction.clampWhenFinished = false;
+      sleepAction.play();
+      currentAction = sleepAction;
+    }
+
     updateButtonVisibility();
-  } else {
-    // Default to idle for any other state
-    petState = "idle";
-    isBusy = false;           // safe to click any action
-    playAction("idle");
-    updateButtonVisibility();
+    updateEnergyBar();
+
+    // DO NOT call startSleepRecovery() here
+    return;
   }
+
+  // ---- DEFAULT IDLE ----
+  petState = "idle";
+  isBusy = false;
+  playAction("idle");
+  updateButtonVisibility();
 }
 
 // === RESIZE ===

@@ -505,7 +505,7 @@ const energyFill = document.getElementById("energyFill");
 function startEnergyDrain() {
   clearInterval(energyInterval);
 
-  const baseDrainRate = 100 / 1200; // ~20 min to drain fully
+  const baseDrainRate = 100 / 100; // ~20 min to drain fully
 
   energyInterval = setInterval(() => {
     if (["sleeping", "sleeping_transition", "wakeup"].includes(petState) || isBusy) return;
@@ -1068,7 +1068,7 @@ function restorePetState() {
     clearInterval(sleepInterval);
 
     petState = "sleeping";
-    isBusy = true;
+    isBusy = false;
 
     playAction("sleep");  
     startSleepRecovery();     // resumes energy recovery

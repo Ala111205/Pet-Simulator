@@ -259,7 +259,7 @@ let isReady = false;
 let petState = "idle";
 let isBusy = false;
 let idleTimeout = null;
-let energy = 100, sleepProgress = 0;
+let energy = null, sleepProgress = 0;
 let anger = 100;
 let happiness = 100;
 let energyInterval = null, sleepInterval = null;
@@ -635,6 +635,9 @@ function startSleepRecovery() {
 }
 
 function updateEnergyBar() {
+  if (isRestoringState) return;
+  if (energy === null) return;
+  
   const value = Math.max(0, Math.min(energy, 100));
   energyFill.style.width = `${value}%`;
   energyFill.style.background =
@@ -1058,60 +1061,58 @@ function requestRender() {
 animate();
 
 function restorePetState() {
-  const raw = localStorage.getItem(PERSIST_KEY);
-  if (!raw) return;
-
   isRestoringState = true;
 
-  const saved = JSON.parse(raw);
-  if (!saved) {
-    isRestoringState = false;
-    return;
-  }
-
-  // Stop ALL timers first (critical)
+  // Stop ALL timers first
   stopEnergyDrain();
   clearInterval(sleepInterval);
   clearInterval(angerInterval);
   clearInterval(happinessInterval);
 
-  // Restore energy
-  if (typeof saved.energy === "number") {
-    energy = Math.max(0, Math.min(saved.energy, 100));
-  }
+  const raw = localStorage.getItem(PERSIST_KEY);
+  if (raw) {
+    const saved = JSON.parse(raw);
 
-  updateEnergyBar();
-  updateStatsDisplay();
-
-  // ---- RESTORE SLEEP ----
-  if (saved.petState === "sleeping" || saved.petState === "sleeping_transition") {
-    console.log("[restore] Sleeping state restored cleanly");
-
-    petState = "sleeping";
-    isBusy = false;
-
-    // Play sleep animation only (no recovery yet)
-    const sleepAction = petStates["sleep"];
-    if (sleepAction) {
-      Object.values(petStates).forEach(a => a.stop());
-      sleepAction.reset();
-      sleepAction.setLoop(THREE.LoopRepeat);
-      sleepAction.play();
-      currentAction = sleepAction;
+    // Restore energy
+    if (saved && typeof saved.energy === "number") {
+      energy = Math.max(0, Math.min(saved.energy, 100));
     }
 
-    updateButtonVisibility();
-    isRestoringState = false;
-    return;
+    // ---- RESTORE SLEEP ----
+    if (saved && (saved.petState === "sleeping" || saved.petState === "sleeping_transition")) {
+      petState = "sleeping";
+      isBusy = false;
+
+      const sleepAction = petStates["sleep"];
+      if (sleepAction) {
+        Object.values(petStates).forEach(a => a.stop());
+        sleepAction.reset();
+        sleepAction.setLoop(THREE.LoopRepeat);
+        sleepAction.play();
+        currentAction = sleepAction;
+      }
+
+      updateButtonVisibility();
+    } else {
+      // ---- DEFAULT IDLE ----
+      petState = "idle";
+      isBusy = false;
+      playAction("idle");
+      updateButtonVisibility();
+    }
+  } else {
+    // No saved state → sane defaults
+    petState = "idle";
+    isBusy = false;
+    playAction("idle");
   }
 
-  // ---- DEFAULT IDLE ----
-  petState = "idle";
-  isBusy = false;
-  playAction("idle");
-  updateButtonVisibility();
-
+  // ✅ RESTORE COMPLETE — allow rendering
   isRestoringState = false;
+
+  // ✅ FIRST and ONLY UI render
+  updateEnergyBar();
+  updateStatsDisplay();
 }
 
 // === RESIZE ===

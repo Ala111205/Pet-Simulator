@@ -505,7 +505,7 @@ const energyFill = document.getElementById("energyFill");
 function startEnergyDrain() {
   clearInterval(energyInterval);
 
-  const baseDrainRate = 100 / 100; // ~20 min to drain fully
+  const baseDrainRate = 100 / 1200; // ~20 min to drain fully
 
   energyInterval = setInterval(() => {
     if (["sleeping", "sleeping_transition", "wakeup"].includes(petState) || isBusy) return;
@@ -529,8 +529,8 @@ function startEnergyDrain() {
 }
 
 // Energydrain for punch and play
-// document.getElementById("playBtn").addEventListener("click", play);
-// document.getElementById("punchBtn").addEventListener("click", punch);
+document.getElementById("playBtn").addEventListener("click", play);
+document.getElementById("punchBtn").addEventListener("click", punch);
 
 function performAction(action, energyCost, callback) {
   if (isBusy || petState === "sleeping" || energy <= 0) return;

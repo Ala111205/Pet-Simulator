@@ -203,11 +203,12 @@
 }
 
 #energyFill {
-    width: 100%;
+    width: 0%;
     height: 100%;
     background: limegreen;
     border-radius: 10px;
     transition: width 0.2s linear, background 0.5s ease;
+    visibility: hidden; 
 }
 
 .alert {

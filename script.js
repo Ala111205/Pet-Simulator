@@ -462,42 +462,88 @@ function switchAnimation(from, to, duration = 0.3) {
 // === STATE LOGIC ===
 function playState(state, onComplete) {
   if (!mixer || !petStates[state]) return;
+
   const next = petStates[state];
   const prev = currentAction;
-  switchAnimation(prev, next);
 
+  switchAnimation(prev, next);
   playAction(state);
 
   if (idleTimeout) clearTimeout(idleTimeout);
 
+  // === TEMP ACTIONS ===
   if (["punch", "play"].includes(state)) {
     idleTimeout = setTimeout(() => {
       switchAnimation(petStates[state], petStates["idle"]);
       playAction("idle");
       petState = "idle";
+      updateButtonVisibility();
       requestRender();
       if (onComplete) onComplete();
     }, 3000);
-  } else if (state === "sleep") {
+    return;
+  }
+
+  // === SLEEP ===
+  if (state === "sleep") {
+    // Let animation start, then enter real sleep logic
     setTimeout(() => {
-      if (onComplete) onComplete();
+      enterSleep(); // 🔥 single source of truth
       requestRender();
-      updateButtonVisibility();
+      if (onComplete) onComplete();
     }, 500);
-  } else if (state === "wakeup") {
-    idleTimeout = setTimeout(() => {
-      switchAnimation(petStates[state], petStates["idle"]);
-      playAction("idle");
-      petState = "idle";
-      updateButtonVisibility();
-      updateEnergyBar();
-      startEnergyDrain();
+    return;
+  }
+
+  // === WAKE UP ===
+  if (state === "wakeup") {
+    // Let wake animation play fully, then wake logic
+    setTimeout(() => {
+      wakeUpPet(); // 🔥 single source of truth
       requestRender();
       if (onComplete) onComplete();
     }, 5000);
-  } else {
-    if (onComplete) onComplete();
+    return;
   }
+
+  // === DEFAULT (IDLE, ETC.) ===
+  if (onComplete) onComplete();
+}
+
+function enterSleep() {
+  petState = "sleeping";
+  isBusy = false;
+
+  const now = Date.now();
+
+  localStorage.setItem(PERSIST_KEY, JSON.stringify({
+    energy,
+    petState: "sleeping",
+    sleepStartTime: now,
+    sleepStartEnergy: energy
+  }));
+
+  playAction("sleep");
+  updateButtonVisibility();
+}
+
+function wakeUpPet() {
+  if (petState !== "sleeping") return;
+
+  clearInterval(sleepInterval);
+
+  petState = "idle";
+  isBusy = false;
+
+  localStorage.setItem(PERSIST_KEY, JSON.stringify({
+    energy,
+    petState: "idle"
+  }));
+
+  playAction("idle");
+  startEnergyDrain();
+  updateButtonVisibility();
+  renderEnergyBar();
 }
 
 // === ENERGY ===
@@ -1079,7 +1125,7 @@ animate();
 function restorePetState() {
   isRestoringState = true;
 
-  // Stop all timers
+  // ⛔ Stop ALL systems first
   stopEnergyDrain();
   clearInterval(sleepInterval);
   clearInterval(angerInterval);
@@ -1090,45 +1136,72 @@ function restorePetState() {
   if (raw) {
     const saved = JSON.parse(raw);
 
+    // ---------------- ENERGY RESTORE ----------------
     if (typeof saved.energy === "number") {
       energy = Math.max(0, Math.min(saved.energy, 100));
     }
 
-    if (saved.petState === "sleeping" || saved.petState === "sleeping_transition") {
+    // ---------------- SLEEP RESTORE ----------------
+    if (
+      saved.petState === "sleeping" &&
+      typeof saved.sleepStartTime === "number" &&
+      typeof saved.sleepStartEnergy === "number"
+    ) {
       petState = "sleeping";
       isBusy = false;
+
+      const now = Date.now();
+      const elapsed = Math.max(0, now - saved.sleepStartTime);
+
+      const RECOVERY_DURATION = 30000; // 30s total sleep recovery
+      const recovered =
+        (elapsed / RECOVERY_DURATION) *
+        (100 - saved.sleepStartEnergy);
+
+      energy = Math.min(
+        100,
+        saved.sleepStartEnergy + recovered
+      );
+
       playAction("sleep");
-    } else {
+    } 
+    // ---------------- DEFAULT IDLE ----------------
+    else {
       petState = "idle";
       isBusy = false;
       playAction("idle");
     }
+  } 
+  // ---------------- NO SAVE FOUND ----------------
+  else {
+    petState = "idle";
+    isBusy = false;
+    playAction("idle");
   }
 
+  // ---------------- UI & FLAGS ----------------
   isBusy = false;
   updateButtonVisibility();
 
   isRestoringState = false;
 
-  // 🔒 INSTANT render (NO animation)
-  updateEnergyBar(true);
-
-  // Show container AFTER correct scale
-  document.getElementById("energyContainer").style.visibility = "visible";
-
-  updateStatsDisplay();
-
-  // Resume systems
-  if (petState === "sleeping") {
-    startSleepRecovery();
-  } else {
-    startEnergyDrain();
-  }
+  // ---------------- ENERGY BAR (INSTANT) ----------------
+  renderEnergyBar(true); // scaleX-based render (instant)
 
   const container = document.getElementById("energyContainer");
   if (container) {
     container.style.visibility = "visible";
     container.style.pointerEvents = "auto";
+  }
+
+  updateStatsDisplay();
+
+  // ---------------- RESUME SYSTEMS ----------------
+  if (petState === "sleeping") {
+    // ⏱ Continue recovery from correct point
+    startSleepRecovery();
+  } else {
+    startEnergyDrain();
   }
 }
 

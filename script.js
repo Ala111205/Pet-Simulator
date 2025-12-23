@@ -1107,21 +1107,24 @@ function restorePetState() {
   // 🔒 Restore finished
   isRestoringState = false;
 
-  // 🔴 APPLY WIDTH FIRST (no transition)
-  energyFill.style.transition = "none";
-  updateEnergyBar();
+  // ❌ DO NOT call updateEnergyBar() here
 
-  // 🔓 THEN reveal bar
+  // ✅ FORCE width directly (no guards, no transition)
+  energyFill.style.transition = "none";
+  energyFill.style.width = `${energy ?? 0}%`;
+
+  // 🔓 Reveal bar AFTER width is set
   energyFill.style.visibility = "visible";
 
-  // 🔁 Re-enable transitions AFTER paint
+  // 🔁 Re-enable transitions AFTER first paint
   requestAnimationFrame(() => {
     energyFill.style.transition = "width 0.2s linear, background 0.5s ease";
   });
 
+  // Now normal rendering can resume
   updateStatsDisplay();
 
-  // ✅ Resume sleep recovery safely
+  // Resume sleep recovery
   if (petState === "sleeping") {
     clearInterval(sleepInterval);
     startSleepRecovery();

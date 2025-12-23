@@ -364,7 +364,7 @@ function loadPetAnimations(id) {
 
             isReady = true;
 
-            // ✅ RESTORE STATE HERE — ONE TIME
+            // RESTORE STATE HERE — ONE TIME
             if (!restoredOnce) {
               restoredOnce = true;
               restorePetState();
@@ -493,9 +493,8 @@ function playState(state, onComplete) {
 
   // === SLEEP ===
   if (state === "sleep") {
-    // Let animation start, then enter real sleep logic
     setTimeout(() => {
-      enterSleep(); // 🔥 single source of truth
+      enterSleep(); 
       requestRender();
       if (onComplete) onComplete();
     }, 500);
@@ -504,9 +503,8 @@ function playState(state, onComplete) {
 
   // === WAKE UP ===
   if (state === "wakeup") {
-    // Let wake animation play fully, then wake logic
     setTimeout(() => {
-      wakeUpPet(); // 🔥 single source of truth
+      wakeUpPet();
       requestRender();
       if (onComplete) onComplete();
     }, 5000);
@@ -692,7 +690,7 @@ function updateEnergyBar(instant = false) {
 
   const scale = Math.max(0, Math.min(energy / 100, 1));
 
-  // ❗ GSAP safety fallback
+  //  GSAP safety fallback
   if (typeof gsap === "undefined") {
     el.style.transform = `scaleX(${scale})`;
   } else {
@@ -826,20 +824,17 @@ if (newState === "sleep") {
 
         petState = "idle";
         isBusy = false;
-        // disableActionButtons();
         updateButtonVisibility();
         startEnergyDrain();
 
         console.log("[energy] Wakeup complete after 4s, energy:", energy);
       }, 4900);
-
-      // enableActionButtons();
       return;
   } else { // --- OTHER STATES (play, punch, idle) ---
       playState(newState, () => {
         petState = "idle";
         isBusy = false;
-        // enableActionButtons();
+
         updateButtonVisibility();
         updateEnergyBar();
         requestRender();
@@ -1121,7 +1116,6 @@ function freezeSleepPose() {
   currentAction = sleepAction;
 
   // Wait until the model is loaded & mixer is ready
-  // Then advance the mixer by 1 frame (or a small delta)
   const delta = 0.05; 
   mixer.update(delta);
 

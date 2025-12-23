@@ -2,8 +2,6 @@ import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 
-import { gsap } from "gsap";
-
 window.addEventListener("load", () => {
   const pageLoader = document.getElementById("pageLoader");
   const petSelection = document.getElementById("petSelection");
@@ -636,7 +634,7 @@ function startSleepRecovery() {
   }, 1000);
 }
 
-function renderEnergyBar(instant = false) {
+function updateEnergyBar(instant = false) {
   if (energy === null) return;
 
   const el = document.getElementById("energyFill");

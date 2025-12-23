@@ -1195,4 +1195,4 @@ window.addEventListener("resize", () => {
 });
 
 updateButtonVisibility();
-// updateEnergyBar();
+updateEnergyBar();

@@ -273,6 +273,7 @@ let angerSpan = null;
 let happinessSpan = null;
 let energySpan = null;
 let isRestoringState = false;
+let restoredOnce = false;
 
 const PERSIST_KEY = "pet_persist_v1";
 
@@ -362,6 +363,12 @@ function loadPetAnimations(id) {
             updateButtonVisibility();
 
             isReady = true;
+
+            // ✅ RESTORE STATE HERE — ONE TIME
+            if (!restoredOnce) {
+              restoredOnce = true;
+              restorePetState();
+            }
 
             loadingScreen.style.transition = "opacity 0.5s ease";
             loadingScreen.style.opacity = "0";

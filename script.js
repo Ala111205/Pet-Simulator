@@ -2,6 +2,8 @@ import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 
+import { gsap } from "gsap";
+
 window.addEventListener("load", () => {
   const pageLoader = document.getElementById("pageLoader");
   const petSelection = document.getElementById("petSelection");
@@ -634,18 +636,28 @@ function startSleepRecovery() {
   }, 1000);
 }
 
-function updateEnergyBar(instant = false) {
+function renderEnergyBar(instant = false) {
   if (energy === null) return;
+
+  const el = document.getElementById("energyFill");
+  if (!el) return;
 
   const scale = Math.max(0, Math.min(energy / 100, 1));
 
-  gsap.to("#energyFill", {
-    scaleX: scale,
-    duration: instant ? 0 : 0.2,
-    ease: "linear"
-  });
+  // ❗ GSAP safety fallback
+  if (typeof gsap === "undefined") {
+    el.style.transform = `scaleX(${scale})`;
+  } else {
+    gsap.to(el, {
+      scaleX: scale,
+      duration: instant ? 0 : 0.2,
+      ease: "linear",
+      overwrite: true
+    });
+  }
 
-  const el = document.getElementById("energyFill");
+  el.style.transformOrigin = "left";
+
   el.style.background =
     petState === "sleeping"
       ? "skyblue"
@@ -655,7 +667,6 @@ function updateEnergyBar(instant = false) {
       ? "gold"
       : "red";
 }
-
 
 // === PET STATE MACHINE ===
 function setPetState(newState) {
@@ -1096,6 +1107,7 @@ function restorePetState() {
     }
   }
 
+  isBusy = false;
   updateButtonVisibility();
 
   isRestoringState = false;
@@ -1113,6 +1125,12 @@ function restorePetState() {
     startSleepRecovery();
   } else {
     startEnergyDrain();
+  }
+
+  const container = document.getElementById("energyContainer");
+  if (container) {
+    container.style.visibility = "visible";
+    container.style.pointerEvents = "auto";
   }
 }
 

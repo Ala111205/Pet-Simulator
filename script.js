@@ -1103,15 +1103,25 @@ function freezeSleepPose() {
   const sleepAction = petStates["sleep"];
   if (!sleepAction || !mixer) return;
 
-  mixer.stopAllAction();       // stop all other animations
+  mixer.stopAllAction();
+
+  // Reset and play the sleep animation once
   sleepAction.reset();
   sleepAction.enabled = true;
-  sleepAction.paused = true;
-  sleepAction.time = 0.01;     // tiny offset to avoid zero-time glitch
+  sleepAction.paused = false;  // play it once to set bones
+  sleepAction.setLoop(THREE.LoopOnce, 1); // play once
+  sleepAction.time = 0;
+  sleepAction.clampWhenFinished = true; // keep last frame
+
   currentAction = sleepAction;
 
-  mixer.update(0);             // force skeleton update
-  requestRender();             // if you have a render loop
+  // Force skeleton update for this frame
+  mixer.update(0.01);
+
+  // Keep it visually “paused” afterwards
+  sleepAction.paused = true;
+
+  requestRender();
 }
 
 // === OPTIMIZED LOOP ===

@@ -635,7 +635,16 @@ function startSleepRecovery() {
 }
 
 function updateEnergyBar() {
-  if (energy === null) return;
+  console.log("updateEnergyBar called", {
+    energy,
+    energyFill,
+    width: energyFill?.style?.width
+  });
+
+  if (!energyFill) {
+    console.error("❌ energyFill is NULL");
+    return;
+  }
 
   const value = Math.max(0, Math.min(energy, 100));
   energyFill.style.width = `${value}%`;

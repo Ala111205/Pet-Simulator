@@ -1193,7 +1193,7 @@ function restorePetState() {
   isRestoringState = false;
 
   // ---------------- ENERGY BAR (INSTANT) ----------------
-  renderEnergyBar(true); // scaleX-based render (instant)
+  updateEnergyBar(true); // scaleX-based render (instant)
 
   const container = document.getElementById("energyContainer");
   if (container) {

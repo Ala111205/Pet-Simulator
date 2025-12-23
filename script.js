@@ -681,6 +681,8 @@ function startSleepRecovery() {
 }
 
 function updateEnergyBar(instant = false) {
+  console.log("[restore] energy before render:", energy);
+
   if (energy === null) return;
 
   const el = document.getElementById("energyFill");
@@ -1177,6 +1179,11 @@ function restorePetState() {
     petState = "idle";
     isBusy = false;
     playAction("idle");
+  }
+
+  // ---------------- SANITY CHECK ----------------
+  if (typeof energy !== "number" || Number.isNaN(energy)) {
+    energy = 0;
   }
 
   // ---------------- UI & FLAGS ----------------

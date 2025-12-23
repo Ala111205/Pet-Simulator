@@ -273,7 +273,6 @@ let angerSpan = null;
 let happinessSpan = null;
 let energySpan = null;
 let isRestoringState = false;
-let hasBootRendered = false;
 
 const PERSIST_KEY = "pet_persist_v1";
 
@@ -636,7 +635,7 @@ function startSleepRecovery() {
 }
 
 function updateEnergyBar() {
-  if (!hasBootRendered) return;
+  if (isRestoringState) return;
   if (energy === null) return;
 
   const value = Math.max(0, Math.min(energy, 100));
@@ -734,8 +733,6 @@ if (newState === "sleep") {
       console.log("[STATE] Transition request: sleeping → wakeup");
 
       clearInterval(sleepInterval);
-      hasBootRendered = true;
-      
       stopEnergyDrain();
 
       let recovered = 0;
@@ -1078,10 +1075,12 @@ function restorePetState() {
   if (raw) {
     const saved = JSON.parse(raw);
 
+    // Restore energy
     if (saved && typeof saved.energy === "number") {
       energy = Math.max(0, Math.min(saved.energy, 100));
     }
 
+    // Restore pet state
     if (saved && (saved.petState === "sleeping" || saved.petState === "sleeping_transition")) {
       petState = "sleeping";
       isBusy = false;
@@ -1095,11 +1094,13 @@ function restorePetState() {
         currentAction = sleepAction;
       }
     } else {
+      // Default to idle
       petState = "idle";
       isBusy = false;
       playAction("idle");
     }
   } else {
+    // No saved state
     petState = "idle";
     isBusy = false;
     playAction("idle");
@@ -1110,28 +1111,26 @@ function restorePetState() {
   // 🔒 Restore finished
   isRestoringState = false;
 
-  // 🧱 BOOT RENDER (ONE TIME ONLY)
+  // ✅ Force width first (no transition)
   energyFill.style.transition = "none";
   energyFill.style.width = `${energy ?? 0}%`;
-  energyFill.style.visibility = "visible";
 
-  updateStatsDisplay();
+  // 🔓 Reveal container AFTER width is set
+  const container = document.getElementById("energyContainer");
+  if (container) container.style.visibility = "visible";
 
-  hasBootRendered = true;
-
-  // 🔁 Enable transitions AFTER first paint
+  // 🔁 Re-enable transitions AFTER paint
   requestAnimationFrame(() => {
     energyFill.style.transition = "width 0.2s linear, background 0.5s ease";
   });
 
-  // 🕒 Start sleep recovery AFTER paint
+  // Render stats
+  updateStatsDisplay();
+
+  // ✅ Resume sleep recovery safely
   if (petState === "sleeping") {
-    setTimeout(() => {
-      if (petState === "sleeping" && hasBootRendered) {
-        clearInterval(sleepInterval);
-        startSleepRecovery();
-      }
-    }, 0);
+    clearInterval(sleepInterval);
+    startSleepRecovery();
   }
 }
 

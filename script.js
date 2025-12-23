@@ -634,30 +634,28 @@ function startSleepRecovery() {
   }, 1000);
 }
 
-function updateEnergyBar() {
-  console.log("updateEnergyBar called", {
-    energy,
-    energyFill,
-    width: energyFill?.style?.width
+function updateEnergyBar(instant = false) {
+  if (energy === null) return;
+
+  const scale = Math.max(0, Math.min(energy / 100, 1));
+
+  gsap.to("#energyFill", {
+    scaleX: scale,
+    duration: instant ? 0 : 0.2,
+    ease: "linear"
   });
 
-  if (!energyFill) {
-    console.error("❌ energyFill is NULL");
-    return;
-  }
-
-  const value = Math.max(0, Math.min(energy, 100));
-  energyFill.style.width = `${value}%`;
-
-  energyFill.style.background =
+  const el = document.getElementById("energyFill");
+  el.style.background =
     petState === "sleeping"
       ? "skyblue"
-      : value > 60
+      : energy > 60
       ? "limegreen"
-      : value > 30
+      : energy > 30
       ? "gold"
       : "red";
 }
+
 
 // === PET STATE MACHINE ===
 function setPetState(newState) {
@@ -1029,6 +1027,7 @@ function checkAlertResets() {
 
 function onPetReady() {
   restorePetState();
+  return;
 
   // Do nothing while restore is in progress
   if (isRestoringState) return;
@@ -1072,7 +1071,7 @@ animate();
 function restorePetState() {
   isRestoringState = true;
 
-  // Stop ALL timers first
+  // Stop all timers
   stopEnergyDrain();
   clearInterval(sleepInterval);
   clearInterval(angerInterval);
@@ -1083,63 +1082,38 @@ function restorePetState() {
   if (raw) {
     const saved = JSON.parse(raw);
 
-    // Restore energy
-    if (saved && typeof saved.energy === "number") {
+    if (typeof saved.energy === "number") {
       energy = Math.max(0, Math.min(saved.energy, 100));
     }
 
-    // Restore pet state
-    if (saved && (saved.petState === "sleeping" || saved.petState === "sleeping_transition")) {
+    if (saved.petState === "sleeping" || saved.petState === "sleeping_transition") {
       petState = "sleeping";
       isBusy = false;
-
-      const sleepAction = petStates["sleep"];
-      if (sleepAction) {
-        Object.values(petStates).forEach(a => a.stop());
-        sleepAction.reset();
-        sleepAction.setLoop(THREE.LoopRepeat);
-        sleepAction.play();
-        currentAction = sleepAction;
-      }
+      playAction("sleep");
     } else {
-      // Default to idle
       petState = "idle";
       isBusy = false;
       playAction("idle");
     }
-  } else {
-    // No saved state
-    petState = "idle";
-    isBusy = false;
-    playAction("idle");
   }
 
   updateButtonVisibility();
 
-    // 🔒 Restore finished
   isRestoringState = false;
 
-  // 🧱 BOOT RENDER (no animation)
-  energyFill.style.transition = "none";
-  energyFill.style.width = `${energy ?? 0}%`;
+  // 🔒 INSTANT render (NO animation)
+  updateEnergyBar(true);
 
-  const container = document.getElementById("energyContainer");
-  if (container) container.style.visibility = "visible";
+  // Show container AFTER correct scale
+  document.getElementById("energyContainer").style.visibility = "visible";
 
   updateStatsDisplay();
 
-  // 🔁 Hand control back to runtime AFTER paint
-  requestAnimationFrame(() => {
-    energyFill.style.transition = "width 0.2s linear, background 0.5s ease";
-    updateEnergyBar(); // ✅ THIS WAS MISSING
-  });
-
-  // ✅ Restart correct systems
+  // Resume systems
   if (petState === "sleeping") {
-    clearInterval(sleepInterval);
     startSleepRecovery();
   } else {
-    startEnergyDrain(); // ❌ YOU WERE NOT RESTARTING THIS
+    startEnergyDrain();
   }
 }
 

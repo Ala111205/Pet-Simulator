@@ -204,12 +204,12 @@
 }
 
 #energyFill {
-    width: 0%;
-    height: 100%;
-    background: limegreen;
-    border-radius: 10px;
-    transition: none;
-    visibility: hidden; 
+  width: 100%;                  /* fixed width */
+  height: 100%;
+  background: limegreen;
+  border-radius: 10px;
+  transform: scaleX(0);         /* start empty */
+  transform-origin: left;       /* grow from left */
 }
 
 .alert {

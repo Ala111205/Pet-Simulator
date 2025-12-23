@@ -1101,7 +1101,7 @@ function onPetReady() {
 
 function freezeSleepPose() {
   const sleepAction = petStates["sleep"];
-  if (!sleepAction || !mixer || !mixer._bindings) return;
+  if (!sleepAction || !mixer) return;
 
   mixer.stopAllAction();
 
@@ -1109,15 +1109,16 @@ function freezeSleepPose() {
   sleepAction.enabled = true;
   sleepAction.setLoop(THREE.LoopOnce, 1);
   sleepAction.clampWhenFinished = true;
-  sleepAction.play(); // actually starts the action
+  sleepAction.play(); // start it properly
 
   currentAction = sleepAction;
 
-  // Force at least one frame update AFTER the action starts
-  // 0.016 ≈ one frame at 60fps
-  mixer.update(0.016);
+  // Wait until the model is loaded & mixer is ready
+  // Then advance the mixer by 1 frame (or a small delta)
+  const delta = 0.05; 
+  mixer.update(delta);
 
-  // Now pause so it stays visually
+  // Pause after the mixer has applied the pose
   sleepAction.paused = true;
 
   requestRender();

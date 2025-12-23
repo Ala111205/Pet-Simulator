@@ -461,12 +461,6 @@ function switchAnimation(from, to, duration = 0.3) {
 
 // === STATE LOGIC ===
 function playState(state, onComplete) {
-  if (isRestoringState) {
-    // 🔒 During restore: animation only, NO logic
-    playAction(state);
-    return;
-  }
-
   if (!mixer || !petStates[state]) return;
 
   const next = petStates[state];
@@ -677,12 +671,6 @@ function startSleepRecovery() {
     energy = Math.min(energy + step, 100);
     updateEnergyBar(); // keep filling visually with each tick
     updateWarnings();
-
-    if (energy >= 100) {
-      clearInterval(sleepInterval);
-      console.log("[sleep] Full energy reached");
-      playState("wakeup");
-    }
   }, 1000);
 }
 

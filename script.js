@@ -1155,7 +1155,7 @@ function restorePetState() {
       const recovered = (elapsed / 30000) * (100 - saved.sleepStartEnergy);
       energy = Math.min(100, saved.sleepStartEnergy + recovered);
 
-      freezeSleepPose();
+      freezeSleepPose(); // keep pet visually sleeping
     } else {
       petState = "idle";
       isBusy = false;
@@ -1169,12 +1169,19 @@ function restorePetState() {
 
   isRestoringState = false;
 
+  const container = document.getElementById("energyContainer");
+  if (container) {
+    container.style.visibility = "visible";
+    container.style.pointerEvents = "auto";
+  }
+
   requestAnimationFrame(() => {
-    updateEnergyBar(true);     // render instantly
+    updateEnergyBar(true);    
     updateStatsDisplay();
     updateButtonVisibility();
   });
 
+  // resume systems
   if (petState === "sleeping") startSleepRecovery();
   else startEnergyDrain();
 }

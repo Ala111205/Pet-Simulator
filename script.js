@@ -1101,24 +1101,23 @@ function onPetReady() {
 
 function freezeSleepPose() {
   const sleepAction = petStates["sleep"];
-  if (!sleepAction || !mixer) return;
+  if (!sleepAction || !mixer || !mixer._bindings) return;
 
   mixer.stopAllAction();
 
-  // Reset and play the sleep animation once
   sleepAction.reset();
   sleepAction.enabled = true;
-  sleepAction.paused = false;  // play it once to set bones
-  sleepAction.setLoop(THREE.LoopOnce, 1); // play once
-  sleepAction.time = 0;
-  sleepAction.clampWhenFinished = true; // keep last frame
+  sleepAction.setLoop(THREE.LoopOnce, 1);
+  sleepAction.clampWhenFinished = true;
+  sleepAction.play(); // actually starts the action
 
   currentAction = sleepAction;
 
-  // Force skeleton update for this frame
-  mixer.update(0.01);
+  // Force at least one frame update AFTER the action starts
+  // 0.016 ≈ one frame at 60fps
+  mixer.update(0.016);
 
-  // Keep it visually “paused” afterwards
+  // Now pause so it stays visually
   sleepAction.paused = true;
 
   requestRender();

@@ -1071,15 +1071,14 @@ function restorePetState() {
   clearInterval(happinessInterval);
 
   const raw = localStorage.getItem(PERSIST_KEY);
+
   if (raw) {
     const saved = JSON.parse(raw);
 
-    // Restore energy
     if (saved && typeof saved.energy === "number") {
       energy = Math.max(0, Math.min(saved.energy, 100));
     }
 
-    // ---- RESTORE SLEEP ----
     if (saved && (saved.petState === "sleeping" || saved.petState === "sleeping_transition")) {
       petState = "sleeping";
       isBusy = false;
@@ -1092,31 +1091,41 @@ function restorePetState() {
         sleepAction.play();
         currentAction = sleepAction;
       }
-
-      updateButtonVisibility();
     } else {
-      // ---- DEFAULT IDLE ----
       petState = "idle";
       isBusy = false;
       playAction("idle");
-      updateButtonVisibility();
     }
   } else {
-    // No saved state → sane defaults
     petState = "idle";
     isBusy = false;
     playAction("idle");
   }
 
-  // ✅ RESTORE COMPLETE — allow rendering
+  updateButtonVisibility();
+
+  // 🔒 Restore finished
   isRestoringState = false;
 
-  // 🔓 Reveal bar ONLY now
+  // 🔴 APPLY WIDTH FIRST (no transition)
+  energyFill.style.transition = "none";
+  updateEnergyBar();
+
+  // 🔓 THEN reveal bar
   energyFill.style.visibility = "visible";
 
-  // ✅ FIRST and ONLY UI render
-  updateEnergyBar();
+  // 🔁 Re-enable transitions AFTER paint
+  requestAnimationFrame(() => {
+    energyFill.style.transition = "width 0.2s linear, background 0.5s ease";
+  });
+
   updateStatsDisplay();
+
+  // ✅ Resume sleep recovery safely
+  if (petState === "sleeping") {
+    clearInterval(sleepInterval);
+    startSleepRecovery();
+  }
 }
 
 // === RESIZE ===

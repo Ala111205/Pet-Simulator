@@ -642,17 +642,11 @@ function startSleepRecovery() {
   stopEnergyDrain();
   clearInterval(sleepInterval);
 
-  // Make sure we’re actually sleeping
-  if (petState !== "sleeping") return;
-
-  isBusy = true;
-  updateButtonVisibility();
-
   const startEnergy = energy;
   const recoveryTarget = 100;
   const totalGain = recoveryTarget - startEnergy;
 
-  // Recovery duration depends on how tired the pet is
+  // determine duration based on tiredness
   let duration;
   if (startEnergy < 15) duration = 30;
   else if (startEnergy < 30) duration = 45;
@@ -661,23 +655,24 @@ function startSleepRecovery() {
 
   const step = totalGain / duration;
 
-  console.log(`[sleep] Recovering from ${startEnergy}% → 100% over ${duration}s`);
-
   sleepInterval = setInterval(() => {
     if (petState !== "sleeping") {
       clearInterval(sleepInterval);
-      console.log("[sleep] Recovery interrupted (pet woke early)");
       return;
     }
 
     energy = Math.min(energy + step, 100);
-    updateEnergyBar();      // Smooth visual update
-    updateStatsDisplay();   // Show actual energy in UI
-    updateWarnings();       // Alerts if needed
+    updateEnergyBar();
+    updateStatsDisplay();
+    updateWarnings();
 
-    // ❌ DO NOT trigger wakeup automatically
-    // Pet will stay sleeping even at 100%
+    if (energy >= 100) {
+      clearInterval(sleepInterval);
+      console.log("[sleep] Fully recovered");
+    }
   }, 1000);
+
+  updateButtonVisibility(); // show wakeup button while sleeping
 }
 
 function updateEnergyBar(instant = false) {
@@ -1106,15 +1101,17 @@ function onPetReady() {
 
 function freezeSleepPose() {
   const sleepAction = petStates["sleep"];
-  if (!sleepAction) return;
+  if (!sleepAction || !mixer) return;
 
-  currentAction = sleepAction;
+  mixer.stopAllAction();       // stop all other animations
   sleepAction.reset();
-  sleepAction.paused = true;
-  sleepAction.time = 0;       
   sleepAction.enabled = true;
-  mixer.update(0);            // force skeleton to sleep pose
-  requestRender();            // ensure one frame render
+  sleepAction.paused = true;
+  sleepAction.time = 0.01;     // tiny offset to avoid zero-time glitch
+  currentAction = sleepAction;
+
+  mixer.update(0);             // force skeleton update
+  requestRender();             // if you have a render loop
 }
 
 // === OPTIMIZED LOOP ===
@@ -1139,6 +1136,7 @@ animate();
 
 function restorePetState() {
   isRestoringState = true;
+
   stopEnergyDrain();
   clearInterval(sleepInterval);
 
@@ -1151,11 +1149,11 @@ function restorePetState() {
       petState = "sleeping";
       isBusy = false;
 
-      const elapsed = Date.now() - saved.sleepStartTime;
-      const recovered = (elapsed / 30000) * (100 - saved.sleepStartEnergy);
-      energy = Math.min(100, saved.sleepStartEnergy + recovered);
+      const elapsed = Date.now() - (saved.sleepStartTime || Date.now());
+      const recovered = (elapsed / 30000) * (100 - (saved.sleepStartEnergy || energy));
+      energy = Math.min(100, (saved.sleepStartEnergy || energy) + recovered);
 
-      freezeSleepPose(); // keep pet visually sleeping
+      freezeSleepPose(); // keeps pet visually sleeping
     } else {
       petState = "idle";
       isBusy = false;
@@ -1181,7 +1179,6 @@ function restorePetState() {
     updateButtonVisibility();
   });
 
-  // resume systems
   if (petState === "sleeping") startSleepRecovery();
   else startEnergyDrain();
 }

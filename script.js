@@ -635,7 +635,6 @@ function startSleepRecovery() {
 }
 
 function updateEnergyBar() {
-  if (isRestoringState) return;
   if (energy === null) return;
 
   const value = Math.max(0, Math.min(energy, 100));

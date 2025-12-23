@@ -273,6 +273,7 @@ let angerSpan = null;
 let happinessSpan = null;
 let energySpan = null;
 let isRestoringState = false;
+let hasBootRendered = false;
 
 const PERSIST_KEY = "pet_persist_v1";
 
@@ -635,7 +636,7 @@ function startSleepRecovery() {
 }
 
 function updateEnergyBar() {
-  if (isRestoringState) return;
+  if (!hasBootRendered) return;
   if (energy === null) return;
 
   const value = Math.max(0, Math.min(energy, 100));
@@ -733,6 +734,8 @@ if (newState === "sleep") {
       console.log("[STATE] Transition request: sleeping → wakeup");
 
       clearInterval(sleepInterval);
+      hasBootRendered = true;
+      
       stopEnergyDrain();
 
       let recovered = 0;
@@ -1107,27 +1110,28 @@ function restorePetState() {
   // 🔒 Restore finished
   isRestoringState = false;
 
-  // ❌ DO NOT call updateEnergyBar() here
-
-  // ✅ FORCE width directly (no guards, no transition)
+  // 🧱 BOOT RENDER (ONE TIME ONLY)
   energyFill.style.transition = "none";
   energyFill.style.width = `${energy ?? 0}%`;
-
-  // 🔓 Reveal bar AFTER width is set
   energyFill.style.visibility = "visible";
 
-  // 🔁 Re-enable transitions AFTER first paint
+  updateStatsDisplay();
+
+  hasBootRendered = true;
+
+  // 🔁 Enable transitions AFTER first paint
   requestAnimationFrame(() => {
     energyFill.style.transition = "width 0.2s linear, background 0.5s ease";
   });
 
-  // Now normal rendering can resume
-  updateStatsDisplay();
-
-  // Resume sleep recovery
+  // 🕒 Start sleep recovery AFTER paint
   if (petState === "sleeping") {
-    clearInterval(sleepInterval);
-    startSleepRecovery();
+    setTimeout(() => {
+      if (petState === "sleeping" && hasBootRendered) {
+        clearInterval(sleepInterval);
+        startSleepRecovery();
+      }
+    }, 0);
   }
 }
 

@@ -1127,7 +1127,7 @@ animate();
 function restorePetState() {
   isRestoringState = true;
 
-  // Stop all intervals first
+  // Stop all intervals
   stopEnergyDrain();
   clearInterval(sleepInterval);
   clearInterval(angerInterval);
@@ -1138,12 +1138,12 @@ function restorePetState() {
   if (raw) {
     const saved = JSON.parse(raw);
 
-    // Restore energy safely
+    // Restore energy
     if (typeof saved.energy === "number") {
       energy = Math.max(0, Math.min(saved.energy, 100));
     }
 
-    // Restore sleeping state
+    // Restore sleeping state visually
     if (
       saved.petState === "sleeping" &&
       typeof saved.sleepStartTime === "number" &&
@@ -1154,23 +1154,28 @@ function restorePetState() {
 
       const now = Date.now();
       const elapsed = Math.max(0, now - saved.sleepStartTime);
-
       const RECOVERY_DURATION = 30000; // 30s full recovery
       const recovered = (elapsed / RECOVERY_DURATION) * (100 - saved.sleepStartEnergy);
       energy = Math.min(100, saved.sleepStartEnergy + recovered);
 
-      // Show sleeping animation visually
+      // Freeze sleeping pose for visual-only restore
       currentAction = petStates["sleep"];
-      petStates["sleep"]?.reset().play();
+      if (currentAction) {
+        currentAction.reset();
+        currentAction.paused = true;    // freeze animation
+        currentAction.time = 0;         // first frame
+        currentAction.enabled = true;
+        mixer.update(0);                // force render
+      }
     } 
-    // Default to idle if not sleeping
+    // Default to idle
     else {
       petState = "idle";
       isBusy = false;
       playAction("idle");
     }
   } 
-  // No saved state found
+  // No saved state
   else {
     petState = "idle";
     isBusy = false;
@@ -1193,7 +1198,7 @@ function restorePetState() {
     container.style.pointerEvents = "auto";
   }
 
-  // Resume systems safely
+  // Resume timers safely
   if (petState === "sleeping") startSleepRecovery(); // continues recovery safely
   else startEnergyDrain();
 }

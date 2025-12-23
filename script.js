@@ -1027,7 +1027,6 @@ function checkAlertResets() {
 
 function onPetReady() {
   restorePetState();
-  return;
 
   // Do nothing while restore is in progress
   if (isRestoringState) return;

@@ -1110,10 +1110,11 @@ function freezeSleepPose() {
 
   currentAction = sleepAction;
   sleepAction.reset();
-  sleepAction.paused = true;  // freeze immediately
-  sleepAction.time = 0;       // first frame
+  sleepAction.paused = true;
+  sleepAction.time = 0;       
   sleepAction.enabled = true;
-  mixer.update(0);            // force skeleton to correct pose
+  mixer.update(0);            // force skeleton to sleep pose
+  requestRender();            // ensure one frame render
 }
 
 // === OPTIMIZED LOOP ===
@@ -1138,82 +1139,43 @@ animate();
 
 function restorePetState() {
   isRestoringState = true;
-
-  // Stop all intervals
   stopEnergyDrain();
   clearInterval(sleepInterval);
-  clearInterval(angerInterval);
-  clearInterval(happinessInterval);
 
   const raw = localStorage.getItem(PERSIST_KEY);
-
   if (raw) {
     const saved = JSON.parse(raw);
+    energy = Math.min(Math.max(saved.energy || 0, 0), 100);
 
-    // Restore energy
-    if (typeof saved.energy === "number") {
-      energy = Math.max(0, Math.min(saved.energy, 100));
-    }
-
-    // Restore sleeping state visually
-    if (
-      saved.petState === "sleeping" &&
-      typeof saved.sleepStartTime === "number" &&
-      typeof saved.sleepStartEnergy === "number"
-    ) {
+    if (saved.petState === "sleeping") {
       petState = "sleeping";
       isBusy = false;
 
-      const now = Date.now();
-      const elapsed = Math.max(0, now - saved.sleepStartTime);
-      const RECOVERY_DURATION = 30000; // 30s full recovery
-      const recovered = (elapsed / RECOVERY_DURATION) * (100 - saved.sleepStartEnergy);
+      const elapsed = Date.now() - saved.sleepStartTime;
+      const recovered = (elapsed / 30000) * (100 - saved.sleepStartEnergy);
       energy = Math.min(100, saved.sleepStartEnergy + recovered);
 
-      // Freeze sleeping pose for visual-only restore
-      currentAction = petStates["sleep"];
-      if (currentAction) {
-        currentAction.reset();
-        currentAction.paused = true;    // freeze animation
-        currentAction.time = 0;         // first frame
-        currentAction.enabled = true;
-        mixer.update(0);                // force render
-      }
-
       freezeSleepPose();
-    } 
-    // Default to idle
-    else {
+    } else {
       petState = "idle";
       isBusy = false;
       playAction("idle");
     }
-  } 
-  // No saved state
-  else {
+  } else {
     petState = "idle";
     isBusy = false;
     playAction("idle");
   }
 
-  // Sanity check
-  if (typeof energy !== "number" || Number.isNaN(energy)) energy = 0;
-
-  // Update UI & flags
-  isBusy = false;
   isRestoringState = false;
-  updateEnergyBar(true); // instant visual
-  updateStatsDisplay();
-  updateButtonVisibility();
 
-  const container = document.getElementById("energyContainer");
-  if (container) {
-    container.style.visibility = "visible";
-    container.style.pointerEvents = "auto";
-  }
+  requestAnimationFrame(() => {
+    updateEnergyBar(true);     // render instantly
+    updateStatsDisplay();
+    updateButtonVisibility();
+  });
 
-  // Resume timers safely
-  if (petState === "sleeping") startSleepRecovery(); // continues recovery safely
+  if (petState === "sleeping") startSleepRecovery();
   else startEnergyDrain();
 }
 
@@ -1226,4 +1188,4 @@ window.addEventListener("resize", () => {
 });
 
 updateButtonVisibility();
-updateEnergyBar();
+// updateEnergyBar();

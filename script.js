@@ -642,15 +642,17 @@ function startSleepRecovery() {
   stopEnergyDrain();
   clearInterval(sleepInterval);
 
-  petState = "sleeping";
+  // Make sure we’re actually sleeping
+  if (petState !== "sleeping") return;
+
   isBusy = true;
   updateButtonVisibility();
 
-  const startEnergy = energy; // current energy when sleep begins
+  const startEnergy = energy;
   const recoveryTarget = 100;
   const totalGain = recoveryTarget - startEnergy;
 
-  // recovery duration depends on how tired the pet is
+  // Recovery duration depends on how tired the pet is
   let duration;
   if (startEnergy < 15) duration = 30;
   else if (startEnergy < 30) duration = 45;
@@ -669,8 +671,12 @@ function startSleepRecovery() {
     }
 
     energy = Math.min(energy + step, 100);
-    updateEnergyBar(); // keep filling visually with each tick
-    updateWarnings();
+    updateEnergyBar();      // Smooth visual update
+    updateStatsDisplay();   // Show actual energy in UI
+    updateWarnings();       // Alerts if needed
+
+    // ❌ DO NOT trigger wakeup automatically
+    // Pet will stay sleeping even at 100%
   }, 1000);
 }
 
@@ -1121,7 +1127,7 @@ animate();
 function restorePetState() {
   isRestoringState = true;
 
-  // ⛔ Stop ALL systems first
+  // Stop all intervals first
   stopEnergyDrain();
   clearInterval(sleepInterval);
   clearInterval(angerInterval);
@@ -1132,12 +1138,12 @@ function restorePetState() {
   if (raw) {
     const saved = JSON.parse(raw);
 
-    // ---------------- ENERGY RESTORE ----------------
+    // Restore energy safely
     if (typeof saved.energy === "number") {
       energy = Math.max(0, Math.min(saved.energy, 100));
     }
 
-    // ---------------- SLEEP RESTORE ----------------
+    // Restore sleeping state
     if (
       saved.petState === "sleeping" &&
       typeof saved.sleepStartTime === "number" &&
@@ -1149,46 +1155,37 @@ function restorePetState() {
       const now = Date.now();
       const elapsed = Math.max(0, now - saved.sleepStartTime);
 
-      const RECOVERY_DURATION = 30000; // 30s total sleep recovery
-      const recovered =
-        (elapsed / RECOVERY_DURATION) *
-        (100 - saved.sleepStartEnergy);
+      const RECOVERY_DURATION = 30000; // 30s full recovery
+      const recovered = (elapsed / RECOVERY_DURATION) * (100 - saved.sleepStartEnergy);
+      energy = Math.min(100, saved.sleepStartEnergy + recovered);
 
-      energy = Math.min(
-        100,
-        saved.sleepStartEnergy + recovered
-      );
-
+      // Show sleeping animation visually
       currentAction = petStates["sleep"];
       petStates["sleep"]?.reset().play();
     } 
-    // ---------------- DEFAULT IDLE ----------------
+    // Default to idle if not sleeping
     else {
       petState = "idle";
       isBusy = false;
       playAction("idle");
     }
   } 
-  // ---------------- NO SAVE FOUND ----------------
+  // No saved state found
   else {
     petState = "idle";
     isBusy = false;
     playAction("idle");
   }
 
-  // ---------------- SANITY CHECK ----------------
-  if (typeof energy !== "number" || Number.isNaN(energy)) {
-    energy = 0;
-  }
+  // Sanity check
+  if (typeof energy !== "number" || Number.isNaN(energy)) energy = 0;
 
-  // ---------------- UI & FLAGS ----------------
+  // Update UI & flags
   isBusy = false;
-  updateButtonVisibility();
-
   isRestoringState = false;
-
-  // ---------------- ENERGY BAR (INSTANT) ----------------
-  updateEnergyBar(true); // scaleX-based render (instant)
+  updateEnergyBar(true); // instant visual
+  updateStatsDisplay();
+  updateButtonVisibility();
 
   const container = document.getElementById("energyContainer");
   if (container) {
@@ -1196,15 +1193,9 @@ function restorePetState() {
     container.style.pointerEvents = "auto";
   }
 
-  updateStatsDisplay();
-
-  // ---------------- RESUME SYSTEMS ----------------
-  if (petState === "sleeping") {
-    // ⏱ Continue recovery from correct point
-    startSleepRecovery();
-  } else {
-    startEnergyDrain();
-  }
+  // Resume systems safely
+  if (petState === "sleeping") startSleepRecovery(); // continues recovery safely
+  else startEnergyDrain();
 }
 
 // === RESIZE ===

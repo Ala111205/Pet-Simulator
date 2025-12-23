@@ -461,6 +461,12 @@ function switchAnimation(from, to, duration = 0.3) {
 
 // === STATE LOGIC ===
 function playState(state, onComplete) {
+  if (isRestoringState) {
+    // 🔒 During restore: animation only, NO logic
+    playAction(state);
+    return;
+  }
+
   if (!mixer || !petStates[state]) return;
 
   const next = petStates[state];
@@ -1165,7 +1171,8 @@ function restorePetState() {
         saved.sleepStartEnergy + recovered
       );
 
-      playAction("sleep");
+      currentAction = petStates["sleep"];
+      petStates["sleep"]?.reset().play();
     } 
     // ---------------- DEFAULT IDLE ----------------
     else {

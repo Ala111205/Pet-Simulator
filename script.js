@@ -1108,29 +1108,30 @@ function restorePetState() {
 
   updateButtonVisibility();
 
-  // 🔒 Restore finished
+    // 🔒 Restore finished
   isRestoringState = false;
 
-  // ✅ Force width first (no transition)
+  // 🧱 BOOT RENDER (no animation)
   energyFill.style.transition = "none";
   energyFill.style.width = `${energy ?? 0}%`;
 
-  // 🔓 Reveal container AFTER width is set
   const container = document.getElementById("energyContainer");
   if (container) container.style.visibility = "visible";
 
-  // 🔁 Re-enable transitions AFTER paint
-  requestAnimationFrame(() => {
-    energyFill.style.transition = "width 0.2s linear, background 0.5s ease";
-  });
-
-  // Render stats
   updateStatsDisplay();
 
-  // ✅ Resume sleep recovery safely
+  // 🔁 Hand control back to runtime AFTER paint
+  requestAnimationFrame(() => {
+    energyFill.style.transition = "width 0.2s linear, background 0.5s ease";
+    updateEnergyBar(); // ✅ THIS WAS MISSING
+  });
+
+  // ✅ Restart correct systems
   if (petState === "sleeping") {
     clearInterval(sleepInterval);
     startSleepRecovery();
+  } else {
+    startEnergyDrain(); // ❌ YOU WERE NOT RESTARTING THIS
   }
 }
 

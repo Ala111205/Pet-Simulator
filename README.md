@@ -1,8 +1,8 @@
 **🦖 3D Pet Simulator**
 
-      A fully interactive 3D virtual pet simulator built with Three.js, featuring real-time animations, state-based logic (idle, punch, play, sleep, wakeup), and smooth visual transitions — all rendered directly in the browser.
-      
-      The project provides a fun and dynamic pet interaction system with automatic animation handling, anger/play/sleep states, and user interaction through intuitive UI controls.
+      A fully interactive 3D virtual pet simulator built with Three.js, featuring real-time animations, persistent state management, and state-based logic (idle, punch, play, sleep, wakeup), all rendered directly in the browser.
+
+The simulator delivers a smooth, lifelike pet experience with automatic animation handling, internal mood logic, and state restoration across page reloads.
 
 **🎮 Live Preview: 👉** https://pet-simulator-rosy.vercel.app/
 
@@ -21,6 +21,20 @@
       💬 Smart Alerts – Context-based messages like “Your pet is angry!” or “It’s time to play!”
 
       🧠 Event-Driven Design – All animations and states controlled through JavaScript event listeners.
+
+**💾 Persistent State System**
+
+      💾 State Persistence via LocalStorage
+      Pet state (sleep/idle), energy levels, and internal stats are saved automatically before page unload.
+
+      🔁 Seamless State Restoration
+      On refresh or revisit, the pet resumes exactly where it left off — including sleep pose and energy recovery.
+
+      🚫 No Animation Glitches
+      Restore logic runs only after all animations are loaded, preventing idle flashes or T-pose artifacts.
+
+      🧩 Versioned Persistence Key
+      Uses a versioned storage key (pet_persist_v1) for safe future upgrades.
 
   **🎨 3D & Animation Features**
 
